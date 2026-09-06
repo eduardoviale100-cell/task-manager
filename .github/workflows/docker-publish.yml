@@ -1,0 +1,89 @@
+# =============================================================
+# CI/CD Pipeline - Build & Push Docker Image to Docker Hub
+# =============================================================
+# Requisitos:
+#   Configura estos Secrets en tu repo de GitHub:
+#     Settings → Secrets and variables → Actions → New repository secret
+#       - DOCKERHUB_USERNAME  →  tu usuario de Docker Hub
+#       - DOCKERHUB_TOKEN     →  un Access Token de Docker Hub
+#         (Créalo en: https://hub.docker.com/settings/security → New Access Token)
+# =============================================================
+
+name: CI/CD - Docker Hub
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+env:
+  DOCKERHUB_REPO: eduardo20262026/task-manager
+
+jobs:
+  # ─────────────────────────────────────────
+  # Job 1: Build & Test
+  # ─────────────────────────────────────────
+  build-and-test:
+    name: 🔨 Build & Test
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: 📥 Checkout código
+        uses: actions/checkout@v4
+
+      - name: ☕ Configurar JDK 17
+        uses: actions/setup-java@v4
+        with:
+          java-version: '17'
+          distribution: 'temurin'
+          cache: 'maven'
+
+      - name: 🧪 Ejecutar tests
+        run: ./mvnw verify -B
+
+  # ─────────────────────────────────────────
+  # Job 2: Build Docker Image & Push to Hub
+  # ─────────────────────────────────────────
+  docker-push:
+    name: 🐳 Docker Build & Push
+    runs-on: ubuntu-latest
+    needs: build-and-test
+    # Solo pushear en merge a main (no en PRs)
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+
+    steps:
+      - name: 📥 Checkout código
+        uses: actions/checkout@v4
+
+      - name: 🏗️ Configurar Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: 🔐 Login a Docker Hub
+        uses: docker/login-action@v3
+        with:
+          username: ${{ secrets.DOCKERHUB_USERNAME }}
+          password: ${{ secrets.DOCKERHUB_TOKEN }}
+
+      - name: 🏷️ Generar metadata (tags y labels)
+        id: meta
+        uses: docker/metadata-action@v5
+        with:
+          images: ${{ env.DOCKERHUB_REPO }}
+          tags: |
+            # Tag "latest" en cada push a main
+            type=raw,value=latest
+            # Tag con el SHA corto del commit
+            type=sha,prefix=,format=short
+            # Tag con fecha (ej: 2026-09-05)
+            type=raw,value={{date 'YYYY-MM-DD'}}
+
+      - name: 🐳 Build & Push imagen
+        uses: docker/build-push-action@v6
+        with:
+          context: .
+          push: true
+          tags: ${{ steps.meta.outputs.tags }}
+          labels: ${{ steps.meta.outputs.labels }}
+          cache-from: type=gha
+          cache-to: type=gha,mode=max

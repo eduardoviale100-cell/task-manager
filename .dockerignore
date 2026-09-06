@@ -1,0 +1,26 @@
+# Directorios de build/IDE
+target/
+.idea/
+.vscode/
+*.iml
+*.iws
+*.ipr
+
+# Git
+.git/
+.gitignore
+.gitattributes
+
+# Docker
+Dockerfile
+docker-compose*.yml
+.dockerignore
+
+# Documentación
+HELP.md
+README.md
+*.md
+
+# OS
+.DS_Store
+Thumbs.db
