@@ -41,24 +41,16 @@ public class TaskController {
 
     // PUT /api/v1/tasks/{id} - Actualizar tarea existente (200 OK / 404 Not Found)
     @PutMapping("/{id}")
-    public ResponseEntity<Task> updateTask(@PathVariable Long id, @RequestBody Task taskDetails) {
-        try {
-            Task updatedTask = taskService.updateTask(id, taskDetails);
-            return ResponseEntity.ok(updatedTask);
-        } catch (RuntimeException e) {
-            return ResponseEntity.notFound().build();
-        }
+    public ResponseEntity<Task> updateTask(@PathVariable Long id, @Valid @RequestBody Task taskDetails) {
+        Task updatedTask = taskService.updateTask(id, taskDetails);
+        return ResponseEntity.ok(updatedTask);
     }
 
     // DELETE /api/v1/tasks/{id} - Eliminar tarea por ID (204 No Content)
     @DeleteMapping("/{id}")
     public ResponseEntity<Void> deleteTask(@PathVariable Long id) {
-        try {
-            taskService.deleteTask(id);
-            return ResponseEntity.noContent().build();
-        } catch (Exception e) {
-            return ResponseEntity.notFound().build();
-        }
+        taskService.deleteTask(id);
+        return ResponseEntity.noContent().build();
     }
 
     // GET /api/v1/tasks/status/{status} - Filtrar tareas por estado (Reto Fase 2)
